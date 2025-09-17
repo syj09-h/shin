@@ -1,123 +1,408 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>간단한 계산기</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f4f4f9;
-        }
-        .calculator {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-        }
-        .calculator input {
-            width: 260px;
-            height: 40px;
-            text-align: right;
-            font-size: 20px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            margin-bottom: 10px;
-        }
-        .calculator button {
-            width: 60px;
-            height: 60px;
-            font-size: 24px;
-            margin: 5px;
-            background-color: #f1f1f1;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .calculator button:hover {
-            background-color: #e0e0e0;
-        }
-        .calculator button:active {
-            background-color: #d1d1d1;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>미로 탈출 게임</title>
+  <style>
+    :root{
+      --bg: #071026;
+      --panel: #0f1724;
+      --muted: #9aa7b2;
+      --player: #ffd166;
+      --key: #ff6b6b;
+      --exit: #7ae582;
+      font-family: "Noto Sans KR", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg),#081522);color:#e9f0f6}
+    .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px}
+    .game{width:980px;max-width:100%;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:12px;padding:14px;display:grid;grid-template-columns:1fr 320px;gap:12px;box-shadow:0 10px 30px rgba(2,6,23,0.6);}
+    .canvas-wrap{background:linear-gradient(180deg,#081827,#071221);border-radius:10px;padding:14px;display:flex;flex-direction:column;align-items:center}
+    canvas{background:#06121a;border-radius:6px;display:block;max-width:100%;height:auto}
+    .hud{margin-top:10px;display:flex;gap:8px;align-items:center;width:100%}
+    .btn{background:var(--panel);border:1px solid rgba(255,255,255,0.03);padding:8px 10px;border-radius:8px;color:var(--muted);cursor:pointer}
+    .btn.primary{background:linear-gradient(180deg,#ffb86b,#ff9f40);color:#081221;font-weight:600}
+    .side{padding:8px 12px}
+    h2{margin:6px 0 10px 0;font-size:1.05rem}
+    .info{background:rgba(255,255,255,0.02);padding:10px;border-radius:8px;color:var(--muted)}
+    .info p{margin:6px 0}
+    .stat{display:flex;gap:8px;flex-direction:column;margin-top:10px}
+    .stat div{display:flex;justify-content:space-between;padding:6px 8px;border-radius:6px;background:rgba(255,255,255,0.01)}
+    .controls{margin-top:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+    .pad{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:8px}
+    .dir{display:grid;grid-template-columns:repeat(3,48px);gap:6px}
+    .dir button{height:48px;border-radius:8px;border:none;background:#15202a;color:#dfeaf0;font-size:18px}
+    .footer{font-size:0.85rem;color:var(--muted);margin-top:12px}
+    @media (max-width:980px){ .game{grid-template-columns:1fr} .side{order:2} .canvas-wrap{order:1} }
+  </style>
 </head>
 <body>
+  <div class="wrap">
+    <div class="game" role="application" aria-label="미로 탈출 게임">
+      <div class="canvas-wrap">
+        <canvas id="mazeCanvas" width="640" height="640" aria-label="미로"></canvas>
 
-<div class="calculator">
-    <input type="text" id="display" disabled>
-    <div>
-        <button onclick="appendNumber('7')">7</button>
-        <button onclick="appendNumber('8')">8</button>
-        <button onclick="appendNumber('9')">9</button>
-        <button onclick="appendOperator('+')">+</button>
-    </div>
-    <div>
-        <button onclick="appendNumber('4')">4</button>
-        <button onclick="appendNumber('5')">5</button>
-        <button onclick="appendNumber('6')">6</button>
-        <button onclick="appendOperator('-')">-</button>
-    </div>
-    <div>
-        <button onclick="appendNumber('1')">1</button>
-        <button onclick="appendNumber('2')">2</button>
-        <button onclick="appendNumber('3')">3</button>
-        <button onclick="appendOperator('*')">*</button>
-    </div>
-    <div>
-        <button onclick="appendNumber('0')">0</button>
-        <button onclick="appendDecimal()">.</button>
-        <button onclick="clearDisplay()">C</button>
-        <button onclick="appendOperator('/')">/</button>
-    </div>
-    <div>
-        <button onclick="calculateResult()">=</button>
-    </div>
-</div>
+        <div class="hud">
+          <button class="btn primary" id="newBtn">새 미로</button>
+          <div style="flex:1"></div>
+          <div class="info" title="걸음 수">걸음: <span id="steps">0</span></div>
+          <div class="info">시간: <span id="timer">--:--</span></div>
+        </div>
 
-<script>
-    let display = document.getElementById('display');
-    let currentInput = '';
+        <div class="pad" id="touchPad" style="display:none">
+          <div class="dir" aria-hidden="false">
+            <div></div><button data-dir="up">▲</button><div></div>
+            <button data-dir="left">◀</button><button data-dir="down">▼</button><button data-dir="right">▶</button>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <button class="btn" id="hintBtn">힌트(경로)</button>
+            <button class="btn" id="hintStep">힌트(한 칸)</button>
+            <button class="btn" id="retryBtn">다시</button>
+          </div>
+        </div>
+      </div>
 
-    function appendNumber(number) {
-        currentInput += number;
-        display.value = currentInput;
-    }
+      <div class="side">
+        <h2>게임 정보</h2>
+        <div class="info">
+          <p>목표: 빨간 열쇠를 찾아 출구로 나가세요. 이동: 화살표 / WASD / 터치버튼</p>
+          <p>미로는 난수로 생성됩니다. 크기를 키워 난이도를 올리세요.</p>
+        </div>
 
-    function appendOperator(operator) {
-        currentInput += ` ${operator} `;
-        display.value = currentInput;
-    }
+        <div class="stat" aria-live="polite" style="margin-top:10px">
+          <div><strong>난이도</strong><span id="sizeLabel">21 x 21</span></div>
+          <div><strong>상태</strong><span id="status">준비</span></div>
+          <div><strong>열쇠</strong><span id="hasKey">없음</span></div>
+        </div>
 
-    function appendDecimal() {
-        if (!currentInput.includes('.')) {
-            currentInput += '.';
-            display.value = currentInput;
+        <h2 style="margin-top:12px">설정</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <label for="sizeRange">사이즈:</label>
+          <input id="sizeRange" type="range" min="9" max="41" step="2" value="21">
+          <span id="sizeVal">21</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+          <label for="timeRange">시간(초):</label>
+          <input id="timeRange" type="range" min="30" max="600" step="10" value="300">
+          <span id="timeVal">300s</span>
+        </div>
+
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="btn" id="toggleTouch">터치패드 토글</button>
+          <button class="btn" id="showPathBtn">경로 표시</button>
+        </div>
+
+        <div class="footer">제작: ChatGPT — 미로 생성(DFS) / 경로탐색(A*) 포함</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========== DOM ==========
+    const canvas = document.getElementById('mazeCanvas');
+    const ctx = canvas.getContext('2d');
+    const newBtn = document.getElementById('newBtn');
+    const sizeRange = document.getElementById('sizeRange');
+    const sizeVal = document.getElementById('sizeVal');
+    const sizeLabel = document.getElementById('sizeLabel');
+    const timeRange = document.getElementById('timeRange');
+    const timeVal = document.getElementById('timeVal');
+    const timerEl = document.getElementById('timer');
+    const stepsEl = document.getElementById('steps');
+    const statusEl = document.getElementById('status');
+    const hasKeyEl = document.getElementById('hasKey');
+    const touchPad = document.getElementById('touchPad');
+    const hintBtn = document.getElementById('hintBtn');
+    const hintStep = document.getElementById('hintStep');
+    const retryBtn = document.getElementById('retryBtn');
+    const toggleTouch = document.getElementById('toggleTouch');
+    const showPathBtn = document.getElementById('showPathBtn');
+
+    // ========== 상태 ==========
+    let COLS = parseInt(sizeRange.value), ROWS = COLS;
+    let maze = [];
+    let cellSize = Math.floor(canvas.width / COLS);
+    let player = {x:0,y:0};
+    let exitCell = {x:0,y:0};
+    let keyCell = null;
+    let hasKey = false;
+    let steps = 0;
+    let remaining = parseInt(timeRange.value);
+    let timerId = null;
+    let running = false;
+    let hintPath = [];
+
+    sizeVal.textContent = COLS;
+    sizeLabel.textContent = `${COLS} x ${ROWS}`;
+    timeVal.textContent = `${remaining}s`;
+    timerEl.textContent = '--:--';
+
+    // ========== 미로 생성 (Recursive backtracker, odd-cell carving) ==========
+    function buildMaze(cols, rows){
+      const grid = Array.from({length:rows}, ()=>Array(cols).fill(0));
+      // start at random odd position
+      const startX = Math.floor(Math.random()*((cols-1)/2))*2+1;
+      const startY = Math.floor(Math.random()*((rows-1)/2))*2+1;
+      const stack = [[startX,startY]];
+      grid[startY][startX] = 1;
+      const dirs = [[2,0],[-2,0],[0,2],[0,-2]];
+      while(stack.length){
+        const [cx,cy] = stack[stack.length-1];
+        const neighbors = [];
+        for(const [dx,dy] of dirs){
+          const nx = cx+dx, ny = cy+dy;
+          if(nx>0 && ny>0 && nx<cols-1 && ny<rows-1 && grid[ny][nx] === 0) neighbors.push([nx,ny,dx,dy]);
         }
-    }
-
-    function clearDisplay() {
-        currentInput = '';
-        display.value = currentInput;
-    }
-
-    function calculateResult() {
-        try {
-            currentInput = eval(currentInput).toString();
-            display.value = currentInput;
-        } catch (e) {
-            display.value = 'Error';
+        if(neighbors.length){
+          const n = neighbors[Math.floor(Math.random()*neighbors.length)];
+          const [nx,ny,dx,dy] = n;
+          grid[cy+dy/2][cx+dx/2] = 1; // carve wall between
+          grid[ny][nx] = 1;
+          stack.push([nx,ny]);
+        } else {
+          stack.pop();
         }
+      }
+      return grid;
     }
-</script>
 
+    // ========== 그리기 ==========
+    function draw(){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      cellSize = Math.floor(canvas.width / COLS);
+      // tiles
+      for(let r=0;r<ROWS;r++){
+        for(let c=0;c<COLS;c++){
+          const x = c*cellSize, y = r*cellSize;
+          if(maze[r][c] === 0) ctx.fillStyle = '#06121a';
+          else ctx.fillStyle = '#0b2330';
+          ctx.fillRect(x,y,cellSize,cellSize);
+        }
+      }
+      // hint path
+      if(hintPath && hintPath.length){
+        ctx.fillStyle = 'rgba(255,255,255,0.12)';
+        for(const p of hintPath){
+          ctx.fillRect(p.x*cellSize + cellSize*0.33, p.y*cellSize + cellSize*0.33, cellSize*0.34, cellSize*0.34);
+        }
+      }
+      // key
+      if(keyCell){
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--key') || '#ff6b6b';
+        ctx.beginPath();
+        ctx.arc((keyCell.x+0.5)*cellSize, (keyCell.y+0.5)*cellSize, cellSize*0.22, 0, Math.PI*2);
+        ctx.fill();
+      }
+      // exit
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--exit') || '#7ae582';
+      ctx.fillRect(exitCell.x*cellSize + cellSize*0.15, exitCell.y*cellSize + cellSize*0.15, cellSize*0.7, cellSize*0.7);
+      // player
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--player') || '#ffd166';
+      ctx.beginPath();
+      ctx.arc((player.x+0.5)*cellSize, (player.y+0.5)*cellSize, cellSize*0.28, 0, Math.PI*2);
+      ctx.fill();
+      // subtle grid lines
+      ctx.strokeStyle = 'rgba(255,255,255,0.02)';
+      ctx.lineWidth = 1;
+      for(let i=0;i<=COLS;i++){ ctx.beginPath(); ctx.moveTo(i*cellSize,0); ctx.lineTo(i*cellSize,ROWS*cellSize); ctx.stroke(); }
+      for(let i=0;i<=ROWS;i++){ ctx.beginPath(); ctx.moveTo(0,i*cellSize); ctx.lineTo(COLS*cellSize,i*cellSize); ctx.stroke(); }
+    }
+
+    // ========== 배치 (플레이어, 열쇠, 출구) ==========
+    function placeSpecials(){
+      // player: first floor cell scanning top-left -> down-right
+      outer:
+      for(let r=1;r<ROWS-1;r++){
+        for(let c=1;c<COLS-1;c++){
+          if(maze[r][c] === 1){ player.x = c; player.y = r; break outer; }
+        }
+      }
+      // exit: find farthest floor from bottom-right scanning
+      outer2:
+      for(let r=ROWS-2;r>0;r--){
+        for(let c=COLS-2;c>0;c--){
+          if(maze[r][c] === 1){ exitCell = {x:c,y:r}; break outer2; }
+        }
+      }
+      // key: random floor not at player or exit
+      const floors = [];
+      for(let r=1;r<ROWS-1;r++) for(let c=1;c<COLS-1;c++) if(maze[r][c]===1) floors.push({x:c,y:r});
+      if(floors.length > 2){
+        do { keyCell = floors[Math.floor(Math.random()*floors.length)]; } while((keyCell.x===player.x && keyCell.y===player.y) || (keyCell.x===exitCell.x && keyCell.y===exitCell.y));
+      } else keyCell = null;
+      hasKey = false;
+      updateUI();
+    }
+
+    // ========== 이동 규칙 ==========
+    function canMove(x,y){ return x>=0 && y>=0 && x<COLS && y<ROWS && maze[y][x]===1; }
+    function move(dx,dy){
+      if(!running) return;
+      const nx = player.x + dx, ny = player.y + dy;
+      if(!canMove(nx,ny)) return;
+      player.x = nx; player.y = ny; steps++; stepsEl.textContent = steps;
+      // pick key
+      if(keyCell && player.x === keyCell.x && player.y === keyCell.y){
+        hasKey = true; keyCell = null; updateUI(); flashStatus('열쇠 획득!');
+      }
+      // check exit
+      if(player.x === exitCell.x && player.y === exitCell.y){
+        if(hasKey) win();
+        else flashStatus('열쇠가 필요합니다!');
+      }
+      draw();
+    }
+
+    // ========== A* 경로탐색 (힌트) ==========
+    function heur(a,b){ return Math.abs(a.x-b.x) + Math.abs(a.y-b.y); }
+
+    function findPath(start, goal){
+      // simple A* with min-heap
+      const open = new BinaryHeap((a,b)=>a.f - b.f);
+      const startNode = {x:start.x,y:start.y,g:0,h:heur(start,goal),parent:null};
+      startNode.f = startNode.g + startNode.h;
+      open.push(startNode);
+      const closed = new Set();
+      const keyOf = (p)=>`${p.x},${p.y}`;
+
+      while(open.size()){
+        const cur = open.pop();
+        if(cur.x === goal.x && cur.y === goal.y){
+          const path = [];
+          let n = cur;
+          while(n){ path.push({x:n.x,y:n.y}); n = n.parent; }
+          return path.reverse();
+        }
+        closed.add(keyOf(cur));
+        for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+          const nx = cur.x + dx, ny = cur.y + dy;
+          if(nx<0||ny<0||nx>=COLS||ny>=ROWS) continue;
+          if(maze[ny][nx] === 0) continue;
+          const k = `${nx},${ny}`;
+          if(closed.has(k)) continue;
+          const g = cur.g + 1;
+          const h = heur({x:nx,y:ny}, goal);
+          open.push({x:nx,y:ny,g,h,f:g+h,parent:cur});
+        }
+      }
+      return null;
+    }
+
+    // Binary heap implementation
+    class BinaryHeap {
+      constructor(cmp){ this.data = []; this.cmp = cmp || ((a,b)=>a-b); }
+      push(x){ this.data.push(x); this._bubbleUp(this.data.length-1); }
+      pop(){ if(!this.data.length) return null; const top = this.data[0]; const last = this.data.pop(); if(this.data.length){ this.data[0] = last; this._bubbleDown(0); } return top; }
+      _bubbleUp(i){ while(i>0){ const p = Math.floor((i-1)/2); if(this.cmp(this.data[i], this.data[p]) < 0){ [this.data[i], this.data[p]] = [this.data[p], this.data[i]]; i = p; } else break; } }
+      _bubbleDown(i){ const n = this.data.length; while(true){ let l = 2*i+1, r = 2*i+2, small = i; if(l<n && this.cmp(this.data[l], this.data[small]) < 0) small = l; if(r<n && this.cmp(this.data[r], this.data[small]) < 0) small = r; if(small===i) break; [this.data[i], this.data[small]] = [this.data[small], this.data[i]]; i = small; } }
+      size(){ return this.data.length; }
+      get length(){ return this.data.length; }
+    }
+
+    // ========== UI / 게임 흐름 ==========
+    function startGame(){
+      stopTimer();
+      COLS = parseInt(sizeRange.value);
+      ROWS = COLS;
+      maze = buildMaze(COLS, ROWS);
+      placeSpecials();
+      steps = 0; stepsEl.textContent = steps;
+      remaining = parseInt(timeRange.value);
+      timerEl.textContent = formatTime(remaining);
+      running = true;
+      hintPath = [];
+      updateUI();
+      draw();
+      statusEl.textContent = '진행중';
+      timerId = setInterval(()=>{
+        remaining--;
+        timerEl.textContent = formatTime(remaining);
+        if(remaining <= 0){ stopTimer(); lose(); }
+      }, 1000);
+    }
+    function stopTimer(){ if(timerId) { clearInterval(timerId); timerId = null; } }
+    function formatTime(s){ const mm = Math.floor(s/60), ss = s%60; return String(mm).padStart(2,'0') + ':' + String(ss).padStart(2,'0'); }
+    function updateUI(){ hasKeyEl.textContent = hasKey ? '있음' : '없음'; sizeLabel.textContent = `${COLS} x ${ROWS}`; }
+    function flashStatus(msg){ statusEl.textContent = msg; setTimeout(()=>{ if(running) statusEl.textContent = '진행중'; }, 1400); }
+    function win(){ running = false; stopTimer(); statusEl.textContent = '승리! 탈출 성공 🎉'; }
+    function lose(){ running = false; statusEl.textContent = '시간 초과! 실패...'; }
+
+    // ========== 이벤트 연결 ==========
+    newBtn.addEventListener('click', ()=> startGame());
+    sizeRange.addEventListener('input', ()=> { sizeVal.textContent = sizeRange.value; });
+    sizeRange.addEventListener('change', ()=> { startGame(); });
+    timeRange.addEventListener('input', ()=> { timeVal.textContent = `${timeRange.value}s`; });
+    timeRange.addEventListener('change', ()=> { startGame(); });
+
+    // keyboard
+    window.addEventListener('keydown', (e)=>{
+      if(!running) return;
+      const k = e.key.toLowerCase();
+      if(k === 'arrowup' || k === 'w'){ move(0,-1); e.preventDefault(); }
+      else if(k === 'arrowdown' || k === 's'){ move(0,1); e.preventDefault(); }
+      else if(k === 'arrowleft' || k === 'a'){ move(-1,0); e.preventDefault(); }
+      else if(k === 'arrowright' || k === 'd'){ move(1,0); e.preventDefault(); }
+    });
+
+    // touch buttons
+    toggleTouch.addEventListener('click', ()=> { touchPad.style.display = (touchPad.style.display === 'none') ? 'block' : 'none'; });
+    touchPad.querySelectorAll('[data-dir]').forEach(b=>{
+      b.addEventListener('click', ()=> {
+        const dir = b.dataset.dir;
+        if(dir === 'up') move(0,-1);
+        if(dir === 'down') move(0,1);
+        if(dir === 'left') move(-1,0);
+        if(dir === 'right') move(1,0);
+      });
+    });
+
+    // hint: full path
+    hintBtn.addEventListener('click', ()=>{
+      if(!running) return;
+      const goal = hasKey ? exitCell : (keyCell || exitCell);
+      const path = findPath({x: player.x, y: player.y}, goal);
+      hintPath = path ? path.slice(1, path.length - 1) : [];
+      draw();
+    });
+
+    // hint: one step (auto move next step)
+    hintStep.addEventListener('click', ()=>{
+      if(!running) return;
+      const goal = hasKey ? exitCell : (keyCell || exitCell);
+      const path = findPath({x: player.x, y: player.y}, goal);
+      if(path && path.length > 1){
+        const next = path[1];
+        player.x = next.x; player.y = next.y; steps++; stepsEl.textContent = steps;
+        if(keyCell && player.x === keyCell.x && player.y === keyCell.y){ hasKey = true; keyCell = null; updateUI(); flashStatus('열쇠 획득!'); }
+        if(player.x === exitCell.x && player.y === exitCell.y){ if(hasKey) win(); else flashStatus('열쇠가 필요합니다!'); }
+        draw();
+      }
+    });
+
+    retryBtn.addEventListener('click', ()=> startGame());
+
+    showPathBtn.addEventListener('click', ()=>{
+      if(!running) return;
+      // toggle showing full path from player to exit (or key)
+      if(hintPath && hintPath.length){ hintPath = []; draw(); }
+      else { hintBtn.click(); }
+    });
+
+    // resize canvas to fit width, keep square
+    function fitCanvas(){
+      const maxW = Math.min(720, Math.floor(window.innerWidth * 0.68));
+      canvas.width = maxW;
+      canvas.height = maxW;
+      cellSize = Math.floor(canvas.width / COLS);
+      draw();
+    }
+    window.addEventListener('resize', fitCanvas);
+
+    // initialize & start
+    startGame();
+    fitCanvas();
+  </script>
 </body>
 </html>
-
 
